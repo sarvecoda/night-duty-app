@@ -1,0 +1,220 @@
+.navbar {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  min-height: 4rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.navbar-icon {
+  color: var(--primary-color);
+}
+
+.navbar-title {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .navbar-title {
+    display: inline;
+  }
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-links {
+  display: flex;
+  list-style: none;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links a {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.navbar-links a:hover {
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+.navbar-links a.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: var(--background);
+  color: var(--primary-color);
+  transform: rotate(15deg);
+}
+
+.theme-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.signout-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.signout-btn:hover {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+  color: white;
+}
+
+.signout-btn span {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .signout-btn span {
+    display: inline;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-content {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-links a {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .theme-toggle, .signout-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .signout-btn span {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-right {
+    gap: 0.5rem;
+  }
+
+  .navbar-links {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  
+  .navbar-links a {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+
+  .theme-toggle {
+    padding: 0.625rem;
+  }
+
+  .signout-btn {
+    padding: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-links a {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.625rem;
+  }
+}
+
+/* Month picker in navbar */
+.navbar-month-picker {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+/* Make the picker compact for navbar */
+.navbar-month-picker .month-year-picker {
+  margin: 0;
+}
+
+.navbar-month-picker .month-year-picker label {
+  display: none; /* Hide label in navbar */
+}
+
+/* Responsive: optimize for mobile */
+@media (max-width: 768px) {
+  .navbar-month-picker {
+    display: flex;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+  
+  .navbar-month-picker .month-year-picker {
+    gap: 0.25rem;
+  }
+  
+  .navbar-month-picker .picker-controls {
+    gap: 0.5rem;
+  }
+  
+  .navbar-month-picker .picker-select {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    min-height: 40px;
+  }
+}
+

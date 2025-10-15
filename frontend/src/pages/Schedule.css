@@ -1,0 +1,187 @@
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.schedule-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.schedule-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.schedule-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.stat-item {
+  padding: 0.375rem 0.75rem;
+  background: var(--background);
+  border-radius: 0.375rem;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.stat-item.warning {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.schedule-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+.empty-schedule-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--surface);
+  border-radius: 0.75rem;
+  border: 2px dashed var(--border-color);
+}
+
+.empty-schedule-state svg {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.empty-schedule-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-schedule-state p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.warnings-content {
+  padding: 1.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.warning-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--background);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--warning);
+}
+
+.warning-item:last-child {
+  margin-bottom: 0;
+}
+
+.warning-item.insufficient_staff {
+  border-left-color: var(--danger);
+}
+
+.warning-item.one_sided_preference {
+  border-left-color: var(--warning);
+}
+
+.warning-item.constraint_conflict {
+  border-left-color: var(--secondary-color);
+}
+
+.warning-item svg {
+  flex-shrink: 0;
+  color: var(--warning);
+}
+
+.warning-item.insufficient_staff svg {
+  color: var(--danger);
+}
+
+.warning-message {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.warning-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .schedule-header {
+    flex-direction: column;
+  }
+
+  .schedule-controls {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .schedule-actions {
+    flex-direction: column;
+  }
+
+  .schedule-actions button {
+    width: 100%;
+  }
+
+  .schedule-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .empty-schedule-state {
+    padding: 3rem 1rem;
+  }
+
+  .empty-schedule-state h3 {
+    font-size: 1.25rem;
+  }
+}
