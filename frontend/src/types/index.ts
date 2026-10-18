@@ -6,6 +6,7 @@ export interface Saint {
   description?: string
   isEmergencyDuty: boolean
   isUnavailableForDuty: boolean
+  isAdmin?: boolean
   createdAt: string
 }
 

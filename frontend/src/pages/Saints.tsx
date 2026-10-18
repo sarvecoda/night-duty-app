@@ -20,7 +20,8 @@ function Saints() {
     email: '',
     description: '',
     isUnavailableForDuty: false,
-    isEmergencyDuty: false
+    isEmergencyDuty: false,
+    isAdmin: false
   })
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
@@ -78,7 +79,8 @@ function Saints() {
       const saintsData: any = {
         name: formData.name,
         mobile: formData.mobile,
-        isUnavailableForDuty: formData.isUnavailableForDuty
+        isUnavailableForDuty: formData.isUnavailableForDuty,
+        isAdmin: formData.isAdmin
       }
 
       // Only include email if it has a value
@@ -188,7 +190,8 @@ function Saints() {
       email: member.email || '',
       description: member.description || '',
       isUnavailableForDuty: member.isUnavailableForDuty,
-      isEmergencyDuty: emergencySaintIds.has(member.id)
+      isEmergencyDuty: emergencySaintIds.has(member.id),
+      isAdmin: member.isAdmin === true
     })
     setShowModal(true)
   }
@@ -226,7 +229,8 @@ function Saints() {
       email: '',
       description: '',
       isUnavailableForDuty: false,
-      isEmergencyDuty: false
+      isEmergencyDuty: false,
+      isAdmin: false
     })
   }
 
@@ -401,6 +405,19 @@ function Saints() {
                   Mark this saint as completely unavailable (card will be red in Availability tab)
                 </p>
               </div>
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.isAdmin}
+                    onChange={e => setFormData({ ...formData, isAdmin: e.target.checked })}
+                  />
+                  <span>WhatsApp admin</span>
+                </label>
+                <p className="help-text">
+                  Can ask the WhatsApp bot for the chart, phone numbers, and attendance. Other members cannot.
+                </p>
+              </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
                   Cancel
@@ -462,7 +479,10 @@ function SaintsCard({ member, onEdit, onDelete, isEmergency }: SaintsCardProps) 
         {getSaintInitials(member.name)}
       </div>
       <div className="saints-info">
-        <h3>{member.name}</h3>
+        <h3>
+          {member.name}
+          {member.isAdmin && <span className="admin-badge">WhatsApp admin</span>}
+        </h3>
         {member.description && <p className="saints-description">{member.description}</p>}
         <div className="saints-contact">
           <div className="contact-item">
