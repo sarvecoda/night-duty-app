@@ -9,7 +9,7 @@ interface Turn {
   content: string
 }
 
-function Ask() {
+function AskConversation() {
   const [turns, setTurns] = useState<Turn[]>([])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -52,11 +52,7 @@ function Ask() {
   }
 
   return (
-    <div className="container ask-page">
-      <div className="ask-header">
-        <h1>Ask</h1>
-        <p>Questions about this night-duty roster.</p>
-      </div>
+    <>
       <div className="ask-thread" aria-live="polite">
         {turns.length === 0 && (
           <p className="ask-empty">Ask who is on duty, who has not replied, or for someone's phone number.</p>
@@ -82,6 +78,41 @@ function Ask() {
           Send
         </button>
       </form>
+    </>
+  )
+}
+
+export function AskWidget() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="ask-widget">
+      {open && (
+        <section className="ask-panel" aria-label="Roster chat">
+          <div className="ask-panel-header">
+            <strong>Ask</strong>
+            <button type="button" className="ask-close" onClick={() => setOpen(false)} aria-label="Close">
+              ×
+            </button>
+          </div>
+          <AskConversation />
+        </section>
+      )}
+      <button type="button" className="ask-fab" onClick={() => setOpen(current => !current)}>
+        Ask
+      </button>
+    </div>
+  )
+}
+
+function Ask() {
+  return (
+    <div className="container ask-page">
+      <div className="ask-header">
+        <h1>Ask</h1>
+        <p>Questions about this night-duty roster.</p>
+      </div>
+      <AskConversation />
     </div>
   )
 }

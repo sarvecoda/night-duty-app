@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import Navbar from './Navbar'
+import { AskWidget } from '../pages/Ask'
 import './Layout.css'
 
 interface LayoutProps {
@@ -13,6 +14,7 @@ function Layout({ children }: LayoutProps) {
       <main className="main-content">
         {children}
       </main>
+      <AskWidget />
     </div>
   )
 }
