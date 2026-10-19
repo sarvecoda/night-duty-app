@@ -384,8 +384,9 @@ export function runQuery(rows: Record<string, unknown>[], spec: QuerySpec): Quer
   if (spec.groupBy) {
     const counts = new Map<string, number>()
     for (const row of filtered) {
-      const key = String(row[spec.groupBy] ?? '')
-      counts.set(key, (counts.get(key) || 0) + 1)
+      const value = row[spec.groupBy]
+      const keys = Array.isArray(value) ? value.map(item => String(item)) : [String(value ?? '')]
+      for (const key of keys) counts.set(key, (counts.get(key) || 0) + 1)
     }
     let groups = [...counts.entries()].map(([key, count]) => ({ key, count }))
     groups.sort((a, b) => spec.desc ? b.count - a.count || a.key.localeCompare(b.key) : a.key.localeCompare(b.key))

@@ -189,6 +189,7 @@ test('query_data filters, groups, and caps rows', () => {
   assert.equal(queried(runQuery(rows, { where: [{ field: 'tags', op: 'exists', value: true }] })).rows?.length, 3)
   assert.equal(queried(runQuery(rows, { where: [{ field: 'missing', op: 'exists', value: false }] })).rows?.length, 3)
   assert.deepEqual(queried(runQuery(rows, { groupBy: 'city', desc: true })).groups?.[0], { key: 'Delhi', count: 2 })
+  assert.deepEqual(queried(runQuery(rows, { groupBy: 'tags', desc: true })).groups?.[0], { key: 'night', count: 2 })
   assert.equal('error' in runQuery(rows, { where: [{ field: 'city', op: 'like', value: 'D' }] }), true)
   const many = Array.from({ length: 250 }, (_, index) => ({ n: index }))
   const capped = queried(runQuery(many, {}))
