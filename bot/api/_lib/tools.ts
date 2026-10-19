@@ -197,7 +197,8 @@ export function definitionsForWeb() {
   const byName = new Map(TOOLS.map(tool => [tool.name, tool]))
   return asDefinitions(WEB_TOOL_NAMES.flatMap(name => {
     const tool = byName.get(name)
-    return tool ? [tool] : []
+    if (!tool) return []
+    return [{ ...tool, description: tool.description.replace(/^Admin only\.\s*/, '') }]
   }))
 }
 
@@ -281,7 +282,7 @@ async function dispatch(caller: Caller, name: string, args: Record<string, unkno
         theirDate: arg(args, 'theirDate'),
       })
     case 'get_chart':
-      return chartFor(arg(args, 'monthYear') || caller.today.slice(0, 7))
+      return chartFor(arg(args, 'monthYear'), caller.today)
     case 'get_person':
       return findPeople(caller, arg(args, 'name'), true)
     case 'who_has_not_replied':
@@ -484,9 +485,21 @@ async function draftCoverAsk(caller: Caller, personName: string, date: string, r
   })
 }
 
-async function chartFor(monthYear: string): Promise<ToolResult> {
-  const schedule = await getSchedule(monthYear)
-  if (!schedule) return { data: `No chart for ${monthYear}.` }
+function asMonth(value: string, today: string): string {
+  if (/^\d{4}-\d{2}$/.test(value)) return value
+  const named = value.match(/([A-Za-z]+)\s+(\d{4})/)
+  if (named) {
+    const index = ['january','february','march','april','may','june','july','august','september','october','november','december']
+      .indexOf(named[1].toLowerCase())
+    if (index >= 0) return `${named[2]}-${String(index + 1).padStart(2, '0')}`
+  }
+  return today.slice(0, 7)
+}
+
+async function chartFor(monthYear: string, today: string): Promise<ToolResult> {
+  const month = asMonth(monthYear, today)
+  const schedule = await getSchedule(month)
+  if (!schedule) return { data: `No chart for ${month}.` }
   return {
     data: schedule.assignments.map(assignment => ({
       date: `${weekday(assignment.date)} ${prettyDate(assignment.date)}`,

@@ -38,27 +38,33 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[], 
   const tools = web ? definitionsForWeb() : definitionsFor(caller.saint.isAdmin === true)
 
   for (let round = 0; round < 4; round++) {
-    const last = round === 3
     const response = await groq({
       model,
       temperature: 0,
       max_completion_tokens: 800,
       reasoning_effort: 'low',
       messages,
-      tools: last ? undefined : tools,
+      tools,
+      tool_choice: 'auto',
     })
     if (response.status === 429) {
       return { text: 'I am busy right now. Please send that again in a few minutes.', counted: false }
     }
     if (!response.ok) {
-      console.error('groq failed', response.status, (await response.text()).slice(0, 300))
+      const errText = await response.text()
+      const recovered = await recoverFailedTool(errText, caller, scope, admin)
+      if (recovered) {
+        messages.push(recovered.assistant, recovered.tool)
+        continue
+      }
+      console.error('groq failed', response.status, errText.slice(0, 300))
       return { text: 'I could not answer that just now. Please try again.', counted: false }
     }
     const body = await response.json() as { choices?: { message?: ChatMessage }[] }
     const message = body.choices?.[0]?.message
     if (!message) return { text: 'I could not answer that just now. Please try again.', counted: false }
     const calls = Array.isArray(message.tool_calls) ? message.tool_calls as { id: string; function: { name: string; arguments: string | Record<string, unknown> } }[] : []
-    if (!calls.length || last) {
+    if (!calls.length) {
       return finish(caller, message.content || (web ? WEB_REFUSAL : admin ? 'I could not find that.' : REFUSAL), undefined, undefined, web)
     }
     messages.push({ role: 'assistant', content: message.content || '', tool_calls: message.tool_calls })
@@ -81,14 +87,38 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[], 
   return finish(caller, web ? WEB_REFUSAL : admin ? 'I could not finish that.' : REFUSAL, undefined, undefined, web)
 }
 
+async function recoverFailedTool(errText: string, caller: Caller, scope: 'whatsapp' | 'web', admin: boolean) {
+  try {
+    const parsed = JSON.parse(errText) as { error?: { failed_generation?: string } }
+    const raw = parsed.error?.failed_generation
+    if (!raw) return null
+    const call = JSON.parse(raw) as { name?: string; arguments?: unknown }
+    if (!call.name) return null
+    const args = typeof call.arguments === 'string' ? call.arguments : JSON.stringify(call.arguments || {})
+    const result = await runTool(caller, call.name, args, scope)
+    const shown = result.direct || result.error || JSON.stringify(result.data ?? '')
+    return {
+      assistant: {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'recovered', type: 'function', function: { name: call.name, arguments: args } }],
+      },
+      tool: { role: 'tool', tool_call_id: 'recovered', content: admin ? shown : scrubDigits(shown) },
+    }
+  } catch {
+    return null
+  }
+}
+
 function webPrompt(today: string): string {
   return [
     'You answer questions about this night-duty roster only.',
     `Today is ${today} (IST).`,
-    'Use tools for any fact about people, dates, phone numbers, attendance, or who has not replied.',
+    'Questions about duty, saints, phone numbers, attendance, availability, and the chart are roster questions. Call a tool before answering them.',
+    'Call get_chart for who is on duty. Never say the roster is unavailable.',
     'Never invent names, dates, or phone numbers.',
     'You cannot change the roster or send WhatsApp messages.',
-    `If the question is not about this roster, reply exactly: ${WEB_REFUSAL}`,
+    `For a question that is not about this roster, such as general knowledge, reply exactly: ${WEB_REFUSAL}`,
   ].join('\n')
 }
 
