@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx --test api/_lib/selfcheck.test.ts"
+    "test": "tsx --test api/_lib/selfcheck.test.ts",
+    "connect-whatsapp": "tsx scripts/connect-whatsapp.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.1.4",

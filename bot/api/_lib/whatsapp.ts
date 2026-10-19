@@ -230,45 +230,90 @@ export async function sendDocument(to: string, mediaId: string, filename: string
   })
 }
 
-/**
- * Templates to submit in Meta as Utility, language matching WHATSAPP_TEMPLATE_LANG.
- * Button payloads are fixed, so the bot remembers who the buttons refer to.
- */
-export const TEMPLATE_SPECS = [
+export interface TemplateSpec {
+  name: string
+  body: string
+  examples: string[]
+  header?: 'DOCUMENT'
+  buttons: { text: string }[]
+}
+
+/** Utility templates. Button text is what Meta sends back; the bot maps those words. */
+export const TEMPLATE_SPECS: TemplateSpec[] = [
   {
     name: 'duty_reminder',
     body: 'Hi {{1}}, you are on night duty on {{2}}. Will you come?',
-    buttons: ['Yes (YES)', 'No (NO)'],
+    examples: ['Asha', '19 Oct'],
+    buttons: [{ text: 'Yes' }, { text: 'No' }],
   },
   {
     name: 'availability_request',
     body: 'Hi {{1}}, please reply with the dates you cannot do night duty in {{2}}, or tap the button if every day is fine.',
-    buttons: ['Available all days (AVAILABLE_ALL)'],
+    examples: ['Asha', '2026-11'],
+    buttons: [{ text: 'Available all days' }],
   },
   {
     name: 'chart_ready',
-    header: 'Document',
+    header: 'DOCUMENT',
     body: 'Hi {{1}}, the night duty chart for {{2}} is attached. Your dates: {{3}}.',
+    examples: ['Asha', '2026-11', '12 Nov, 19 Nov'],
     buttons: [],
   },
   {
     name: 'swap_request',
     body: 'Hi {{1}}, {{2}} wants to swap duties. They give {{3}} and would take {{4}}. Accept or decline.',
-    buttons: ['Accept (ACCEPT)', 'Decline (DECLINE)'],
+    examples: ['Rahul', 'Asha', '12 Nov', '19 Nov'],
+    buttons: [{ text: 'Accept' }, { text: 'Decline' }],
   },
   {
     name: 'cover_request',
     body: 'Hi {{1}}, can you cover night duty on {{2}} for {{3}}?',
-    buttons: ['Yes (COVER_YES)', 'No (COVER_NO)'],
+    examples: ['Rahul', '12 Nov', 'Asha'],
+    buttons: [{ text: 'Yes' }, { text: 'No' }],
   },
   {
     name: 'attendance_check',
     body: 'Who came for night duty on {{1}}? First: {{2}}. Second: {{3}}.',
-    buttons: ['Both (ATT_BOTH)', 'Only first (ATT_FIRST)', 'Only second (ATT_SECOND)', 'Neither (ATT_NEITHER)'],
+    examples: ['19 Oct', 'Asha', 'Rahul'],
+    buttons: [
+      { text: 'Both' },
+      { text: 'Only first' },
+      { text: 'Only second' },
+      { text: 'Neither' },
+    ],
   },
   {
     name: 'duty_update',
-    body: '{{1}}',
+    body: 'Night duty update: {{1}}',
+    examples: ['Asha said they will come on 19 Oct.'],
     buttons: [],
   },
-] as const
+]
+
+export function templatePayload(spec: TemplateSpec, sampleDocument?: string) {
+  const components: Record<string, unknown>[] = []
+  if (spec.header === 'DOCUMENT') {
+    components.push({
+      type: 'HEADER',
+      format: 'DOCUMENT',
+      example: sampleDocument ? { header_handle: [sampleDocument] } : undefined,
+    })
+  }
+  components.push({
+    type: 'BODY',
+    text: spec.body,
+    example: { body_text: [spec.examples] },
+  })
+  if (spec.buttons.length) {
+    components.push({
+      type: 'BUTTONS',
+      buttons: spec.buttons.map(button => ({ type: 'QUICK_REPLY', text: button.text })),
+    })
+  }
+  return {
+    name: spec.name,
+    language: process.env.WHATSAPP_TEMPLATE_LANG || 'en',
+    category: 'UTILITY',
+    components,
+  }
+}

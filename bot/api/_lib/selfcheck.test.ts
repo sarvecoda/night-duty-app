@@ -19,7 +19,8 @@ import {
   WEB_TOOL_NAMES,
 } from './pure.js'
 import { definitionsFor, definitionsForWeb } from './tools.js'
-import { TEMPLATE_SPECS, verifySignature } from './whatsapp.js'
+import { missingWhatsAppEnv } from './metaSetup.js'
+import { TEMPLATE_SPECS, templatePayload, verifySignature } from './whatsapp.js'
 
 test('normalizes Indian phone numbers', () => {
   assert.equal(normalizePhone('9876543210'), '919876543210')
@@ -154,6 +155,11 @@ test('template button labels map to fixed payloads', () => {
     'attendance_check',
     'duty_update',
   ].join(','))
+  const reminder = templatePayload(TEMPLATE_SPECS[0])
+  assert.equal(reminder.category, 'UTILITY')
+  assert.deepEqual(TEMPLATE_SPECS[0].buttons.map(button => button.text), ['Yes', 'No'])
+  assert.equal(canonicalButton('Yes'), 'YES')
+  assert.equal(missingWhatsAppEnv().includes('WHATSAPP_PHONE_NUMBER_ID'), true)
 })
 
 test('reads attendance button ids', () => {
