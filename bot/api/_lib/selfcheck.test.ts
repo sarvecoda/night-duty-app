@@ -14,8 +14,9 @@ import {
   scrubDigits,
   shapePeople,
   toolNamesFor,
+  WEB_TOOL_NAMES,
 } from './pure.js'
-import { definitionsFor } from './tools.js'
+import { definitionsFor, definitionsForWeb } from './tools.js'
 import { TEMPLATE_SPECS, verifySignature } from './whatsapp.js'
 
 test('normalizes Indian phone numbers', () => {
@@ -77,6 +78,10 @@ test('members do not get admin tools or phone numbers', () => {
   assert.equal(shown[0].mobile, '919876543210')
   assert.deepEqual(definitionsFor(false).map(tool => tool.function.name), member)
   assert.deepEqual(definitionsFor(true).map(tool => tool.function.name), admin)
+  assert.deepEqual(definitionsForWeb().map(tool => tool.function.name), [...WEB_TOOL_NAMES])
+  for (const name of ['save_my_availability', 'request_swap', 'record_attendance', 'ask_to_cover', 'cannot_come']) {
+    assert.equal(WEB_TOOL_NAMES.includes(name as typeof WEB_TOOL_NAMES[number]), false)
+  }
 })
 
 test('webhook signature uses the raw body', () => {

@@ -19,6 +19,14 @@ export const ADMIN_TOOL_NAMES = [
   'ask_to_cover',
 ] as const
 
+export const WEB_TOOL_NAMES = [
+  'get_chart',
+  'find_person',
+  'get_person',
+  'who_has_not_replied',
+  'get_attendance',
+] as const
+
 export function toolNamesFor(isAdmin: boolean): string[] {
   return isAdmin ? [...ADMIN_TOOL_NAMES] : [...MEMBER_TOOL_NAMES]
 }

@@ -11,6 +11,7 @@ import Schedule from './pages/Schedule'
 import Saints from './pages/Saints'
 import Availability from './pages/Availability'
 import Reports from './pages/Reports'
+import Ask from './pages/Ask'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
                       <Route path="/saints" element={<Saints />} />
                       <Route path="/availability" element={<Availability />} />
                       <Route path="/reports" element={<Reports />} />
+                      <Route path="/ask" element={<Ask />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

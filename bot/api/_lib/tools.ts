@@ -26,6 +26,7 @@ import {
   prettyDate,
   shapePeople,
   toolNamesFor,
+  WEB_TOOL_NAMES,
   weekday,
   type AttendanceInput,
 } from './pure.js'
@@ -177,14 +178,26 @@ const TOOLS: ToolDef[] = [
   },
 ]
 
-export function definitionsFor(isAdmin: boolean) {
-  return TOOLS.filter(tool => isAdmin || !tool.adminOnly).map(tool => ({
+function asDefinitions(tools: ToolDef[]) {
+  return tools.map(tool => ({
     type: 'function' as const,
     function: {
       name: tool.name,
       description: tool.description,
       parameters: tool.parameters,
     },
+  }))
+}
+
+export function definitionsFor(isAdmin: boolean) {
+  return asDefinitions(TOOLS.filter(tool => isAdmin || !tool.adminOnly))
+}
+
+export function definitionsForWeb() {
+  const byName = new Map(TOOLS.map(tool => [tool.name, tool]))
+  return asDefinitions(WEB_TOOL_NAMES.flatMap(name => {
+    const tool = byName.get(name)
+    return tool ? [tool] : []
   }))
 }
 
@@ -228,8 +241,8 @@ async function ownDutyDate(caller: Caller, requested: string): Promise<{ date: s
   return { error: `Which date? You are on ${duties.map(duty => prettyDate(duty.date)).join(', ')}.` }
 }
 
-export async function runTool(caller: Caller, name: string, raw: string): Promise<ToolResult> {
-  const allowed = new Set(toolNamesFor(caller.saint.isAdmin === true))
+export async function runTool(caller: Caller, name: string, raw: string, scope: 'whatsapp' | 'web' = 'whatsapp'): Promise<ToolResult> {
+  const allowed = new Set(scope === 'web' ? WEB_TOOL_NAMES : toolNamesFor(caller.saint.isAdmin === true))
   if (!allowed.has(name)) return { error: 'That action is not available.' }
   let args: Record<string, unknown> = {}
   if (raw) {

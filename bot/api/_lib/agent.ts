@@ -1,10 +1,11 @@
 import type { OutButton } from './whatsapp.js'
 import type { ChatTurn, Pending } from './roster.js'
 import { dutiesFor, getAvailability, openRequestsFor } from './roster.js'
-import { definitionsFor, runTool, type Caller, type ToolResult } from './tools.js'
+import { definitionsFor, definitionsForWeb, runTool, type Caller, type ToolResult } from './tools.js'
 import { nextMonthYear, prettyDate, scrubDigits } from './pure.js'
 
 const REFUSAL = 'I can help with your dates, availability, swaps, or telling the admins you can\'t come.'
+export const WEB_REFUSAL = 'I can only answer questions about this night-duty roster.'
 
 interface ChatMessage {
   role: string
@@ -20,20 +21,21 @@ export interface Answer {
   counted?: boolean
 }
 
-export async function answer(caller: Caller, text: string, history: ChatTurn[]): Promise<Answer> {
+export async function answer(caller: Caller, text: string, history: ChatTurn[], scope: 'whatsapp' | 'web' = 'whatsapp'): Promise<Answer> {
   if (!process.env.GROQ_API_KEY) {
     return { text: 'The assistant is not set up yet.', counted: false }
   }
-  const admin = caller.saint.isAdmin === true
+  const web = scope === 'web'
+  const admin = web || caller.saint.isAdmin === true
   const model = admin
     ? process.env.GROQ_MODEL_ADMIN || 'openai/gpt-oss-120b'
     : process.env.GROQ_MODEL_MEMBER || 'openai/gpt-oss-20b'
   const messages: ChatMessage[] = [
-    { role: 'system', content: await systemPrompt(caller) },
+    { role: 'system', content: web ? webPrompt(caller.today) : await systemPrompt(caller) },
     ...history.slice(-8).map(turn => ({ role: turn.role, content: turn.content.slice(0, 500) })),
     { role: 'user', content: text.slice(0, 1000) },
   ]
-  const tools = definitionsFor(admin)
+  const tools = web ? definitionsForWeb() : definitionsFor(caller.saint.isAdmin === true)
 
   for (let round = 0; round < 4; round++) {
     const last = round === 3
@@ -57,7 +59,7 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[]):
     if (!message) return { text: 'I could not answer that just now. Please try again.', counted: false }
     const calls = Array.isArray(message.tool_calls) ? message.tool_calls as { id: string; function: { name: string; arguments: string | Record<string, unknown> } }[] : []
     if (!calls.length || last) {
-      return finish(caller, message.content || (admin ? 'I could not find that.' : REFUSAL))
+      return finish(caller, message.content || (web ? WEB_REFUSAL : admin ? 'I could not find that.' : REFUSAL), undefined, undefined, web)
     }
     messages.push({ role: 'assistant', content: message.content || '', tool_calls: message.tool_calls })
     let direct: ToolResult | null = null
@@ -65,7 +67,7 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[]):
       const rawArgs = typeof call.function.arguments === 'string'
         ? call.function.arguments || '{}'
         : JSON.stringify(call.function.arguments || {})
-      const result = await runTool(caller, call.function.name, rawArgs)
+      const result = await runTool(caller, call.function.name, rawArgs, scope)
       if (result.direct || result.buttons) direct = result
       const shown = result.direct || result.error || JSON.stringify(result.data ?? '')
       messages.push({
@@ -74,13 +76,24 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[]):
         content: admin ? shown : scrubDigits(shown),
       })
     }
-    if (direct?.direct) return finish(caller, direct.direct, direct.buttons, direct.pending)
+    if (direct?.direct) return finish(caller, direct.direct, direct.buttons, direct.pending, web)
   }
-  return finish(caller, admin ? 'I could not finish that.' : REFUSAL)
+  return finish(caller, web ? WEB_REFUSAL : admin ? 'I could not finish that.' : REFUSAL, undefined, undefined, web)
 }
 
-function finish(caller: Caller, text: string, buttons?: OutButton[], pending?: Pending | null): Answer {
-  const clean = caller.saint.isAdmin ? text : scrubDigits(text)
+function webPrompt(today: string): string {
+  return [
+    'You answer questions about this night-duty roster only.',
+    `Today is ${today} (IST).`,
+    'Use tools for any fact about people, dates, phone numbers, attendance, or who has not replied.',
+    'Never invent names, dates, or phone numbers.',
+    'You cannot change the roster or send WhatsApp messages.',
+    `If the question is not about this roster, reply exactly: ${WEB_REFUSAL}`,
+  ].join('\n')
+}
+
+function finish(caller: Caller, text: string, buttons?: OutButton[], pending?: Pending | null, web = false): Answer {
+  const clean = web || caller.saint.isAdmin ? text : scrubDigits(text)
   return { text: clean, buttons, pending }
 }
 

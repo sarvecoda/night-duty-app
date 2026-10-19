@@ -76,6 +76,11 @@ function Navbar() {
                 Reports
               </Link>
             </li>
+            <li>
+              <Link to="/ask" className={isActive('/ask') ? 'active' : ''}>
+                Ask
+              </Link>
+            </li>
           </ul>
           <div className="navbar-month-picker">
             <MonthYearPicker 
