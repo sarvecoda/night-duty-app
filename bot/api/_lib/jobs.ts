@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { generateMonthlySchedule } from '../../../frontend/src/services/scheduleGenerator'
+import { generateMonthlySchedule } from '../../../frontend/src/services/scheduleGenerator.js'
 import type { Availability } from '../../../frontend/src/types/index'
 import {
   alertAdmins,
@@ -16,15 +16,15 @@ import {
   waIdFor,
   type BotSaint,
   type Pending,
-} from './roster.ts'
-import { deliver, uploadPdf, type OutButton } from './whatsapp.ts'
+} from './roster.js'
+import { deliver, uploadPdf, type OutButton } from './whatsapp.js'
 import {
   monthEndKind,
   nextMonthYear,
   prettyDate,
   weekday,
   within24Hours,
-} from './pure.ts'
+} from './pure.js'
 
 export async function runMorning(today: string, persist: boolean) {
   if (persist && !(await claimJob(today, 'morning'))) return { skipped: true }

@@ -1,8 +1,8 @@
-import type { OutButton } from './whatsapp.ts'
-import type { ChatTurn, Pending } from './roster.ts'
-import { dutiesFor, getAvailability, openRequestsFor } from './roster.ts'
-import { definitionsFor, runTool, type Caller, type ToolResult } from './tools.ts'
-import { nextMonthYear, prettyDate, scrubDigits } from './pure.ts'
+import type { OutButton } from './whatsapp.js'
+import type { ChatTurn, Pending } from './roster.js'
+import { dutiesFor, getAvailability, openRequestsFor } from './roster.js'
+import { definitionsFor, runTool, type Caller, type ToolResult } from './tools.js'
+import { nextMonthYear, prettyDate, scrubDigits } from './pure.js'
 
 const REFUSAL = 'I can help with your dates, availability, swaps, or telling the admins you can\'t come.'
 

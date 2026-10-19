@@ -1,5 +1,5 @@
-import { answer } from './agent.ts'
-import { canonicalButton, istDate, parseAttendanceButton, prettyDate, within24Hours } from './pure.ts'
+import { answer } from './agent.js'
+import { canonicalButton, istDate, parseAttendanceButton, prettyDate, within24Hours } from './pure.js'
 import {
   alertAdmins,
   commitExchange,
@@ -19,8 +19,8 @@ import {
   type BotSaint,
   type ChatDoc,
   type Pending,
-} from './roster.ts'
-import { deliver, type Inbound, type OutButton } from './whatsapp.ts'
+} from './roster.js'
+import { deliver, type Inbound, type OutButton } from './whatsapp.js'
 
 const AI_CAP = 30
 

@@ -34,3 +34,4 @@ logs/
 # OS
 Thumbs.db
 
+.vercel

@@ -1,5 +1,5 @@
-import { istDate } from '../_lib/pure.ts'
-import { runEvening } from '../_lib/jobs.ts'
+import { istDate } from '../_lib/pure.js'
+import { runEvening } from '../_lib/jobs.js'
 
 export const maxDuration = 300
 

@@ -1,7 +1,7 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore, Timestamp, type Firestore } from 'firebase-admin/firestore'
 import type { Availability, MonthlySchedule, ScheduleAssignment, Saint } from '../../../frontend/src/types/index'
-import { deliver } from './whatsapp.ts'
+import { deliver } from './whatsapp.js'
 import {
   addMonths,
   checkExchange,
@@ -12,7 +12,7 @@ import {
   replaceSaintOnDate,
   within24Hours,
   type DutySlot,
-} from './pure.ts'
+} from './pure.js'
 
 export interface BotSaint extends Saint {
   isAdmin?: boolean

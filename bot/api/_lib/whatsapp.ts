@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { flatten } from './pure.ts'
+import { flatten } from './pure.js'
 
 const GRAPH = 'https://graph.facebook.com/v21.0'
 

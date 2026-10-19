@@ -1,7 +1,7 @@
 import { waitUntil } from '@vercel/functions'
-import { handleInbound } from './_lib/inbound.ts'
-import { claimInbox, saintByPhone } from './_lib/roster.ts'
-import { parseInbound, verifySignature, type Inbound } from './_lib/whatsapp.ts'
+import { handleInbound } from './_lib/inbound.js'
+import { claimInbox, saintByPhone } from './_lib/roster.js'
+import { parseInbound, verifySignature, type Inbound } from './_lib/whatsapp.js'
 
 export const maxDuration = 300
 

@@ -1,5 +1,5 @@
-import type { OutButton } from './whatsapp.ts'
-import type { BotSaint, Pending } from './roster.ts'
+import type { OutButton } from './whatsapp.js'
+import type { BotSaint, Pending } from './roster.js'
 import {
   alertAdmins,
   availabilityForMonth,
@@ -14,7 +14,7 @@ import {
   saveAvailability,
   saveDuty,
   slotsOf,
-} from './roster.ts'
+} from './roster.js'
 import {
   attendanceSummary,
   checkExchange,
@@ -28,7 +28,7 @@ import {
   toolNamesFor,
   weekday,
   type AttendanceInput,
-} from './pure.ts'
+} from './pure.js'
 
 export { toolNamesFor }
 

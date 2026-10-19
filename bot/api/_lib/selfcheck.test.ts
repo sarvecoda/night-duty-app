@@ -14,9 +14,9 @@ import {
   scrubDigits,
   shapePeople,
   toolNamesFor,
-} from './pure.ts'
-import { definitionsFor } from './tools.ts'
-import { TEMPLATE_SPECS, verifySignature } from './whatsapp.ts'
+} from './pure.js'
+import { definitionsFor } from './tools.js'
+import { TEMPLATE_SPECS, verifySignature } from './whatsapp.js'
 
 test('normalizes Indian phone numbers', () => {
   assert.equal(normalizePhone('9876543210'), '919876543210')
