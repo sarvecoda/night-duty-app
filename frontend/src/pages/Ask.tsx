@@ -55,7 +55,7 @@ function AskConversation() {
     <>
       <div className="ask-thread" aria-live="polite">
         {turns.length === 0 && (
-          <p className="ask-empty">Ask about saints, charts, availability, attendance, or WhatsApp replies.</p>
+          <p className="ask-empty">Saints, charts, availability, attendance, or WhatsApp replies.</p>
         )}
         {turns.map((turn, index) => (
           <div key={`${turn.role}-${index}`} className={`ask-bubble ${turn.role}`}>
@@ -70,7 +70,8 @@ function AskConversation() {
           className="input"
           value={text}
           onChange={event => setText(event.target.value)}
-          placeholder="Ask about the roster"
+          placeholder="Saints, charts, availability..."
+          aria-label="Question"
           maxLength={1000}
           disabled={busy}
         />
@@ -88,9 +89,9 @@ export function AskWidget() {
   return (
     <div className="ask-widget">
       {open && (
-        <section className="ask-panel" aria-label="Roster chat">
+        <section className="ask-panel" aria-label="Assistant">
           <div className="ask-panel-header">
-            <strong>Ask</strong>
+            <AgentIcon />
             <button type="button" className="ask-close" onClick={() => setOpen(false)} aria-label="Close">
               ×
             </button>
@@ -98,10 +99,19 @@ export function AskWidget() {
           <AskConversation />
         </section>
       )}
-      <button type="button" className="ask-fab" onClick={() => setOpen(current => !current)}>
-        Ask
+      <button type="button" className="ask-fab" onClick={() => setOpen(current => !current)} aria-label="Open assistant">
+        <AgentIcon />
       </button>
     </div>
+  )
+}
+
+function AgentIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M12 3l1.6 4.8L18.5 9.5l-4.9 1.6L12 16l-1.6-4.9L5.5 9.5l4.9-1.7L12 3z"></path>
+      <path d="M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2z"></path>
+    </svg>
   )
 }
 
@@ -109,8 +119,8 @@ function Ask() {
   return (
     <div className="container ask-page">
       <div className="ask-header">
-        <h1>Ask</h1>
-        <p>Questions about this night-duty roster.</p>
+        <AgentIcon />
+        <p>Questions about saints, charts, availability, and attendance.</p>
       </div>
       <AskConversation />
     </div>

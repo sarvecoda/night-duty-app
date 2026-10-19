@@ -43,56 +43,25 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="container navbar-content">
-        <div className="navbar-brand">
-          <svg className="navbar-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-          <span className="navbar-title">Night Duty App</span>
-        </div>
-        <div className="navbar-right">
-          <ul className="navbar-links">
-            <li>
-              <Link to="/" className={isActive('/') ? 'active' : ''}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link to="/saints" className={isActive('/saints') ? 'active' : ''}>
-                Saints
-              </Link>
-            </li>
-            <li>
-              <Link to="/availability" className={isActive('/availability') ? 'active' : ''}>
-                Availability
-              </Link>
-            </li>
-            <li>
-              <Link to="/schedule" className={isActive('/schedule') ? 'active' : ''}>
-                Schedule
-              </Link>
-            </li>
-            <li>
-              <Link to="/reports" className={isActive('/reports') ? 'active' : ''}>
-                Reports
-              </Link>
-            </li>
-            <li>
-              <Link to="/ask" className={isActive('/ask') ? 'active' : ''}>
-                Ask
-              </Link>
-            </li>
-          </ul>
-          <div className="navbar-month-picker">
-            <MonthYearPicker 
-              value={selectedMonthYear} 
-              onChange={setSelectedMonthYear}
-            />
+        <div className="navbar-top">
+          <div className="navbar-brand">
+            <svg className="navbar-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span className="navbar-title">Night Duty</span>
           </div>
-          <button 
-            className="theme-toggle" 
-            onClick={toggleTheme}
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          >
+          <div className="navbar-tools">
+            <div className="navbar-month-picker">
+              <MonthYearPicker
+                value={selectedMonthYear}
+                onChange={setSelectedMonthYear}
+              />
+            </div>
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
             {theme === 'light' ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -123,7 +92,35 @@ function Navbar() {
             </svg>
             <span>Sign Out</span>
           </button>
+          </div>
         </div>
+        <ul className="navbar-links">
+          <li>
+            <Link to="/" className={isActive('/') ? 'active' : ''}>
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <Link to="/saints" className={isActive('/saints') ? 'active' : ''}>
+              Saints
+            </Link>
+          </li>
+          <li>
+            <Link to="/availability" className={isActive('/availability') ? 'active' : ''}>
+              Availability
+            </Link>
+          </li>
+          <li>
+            <Link to="/schedule" className={isActive('/schedule') ? 'active' : ''}>
+              Schedule
+            </Link>
+          </li>
+          <li>
+            <Link to="/reports" className={isActive('/reports') ? 'active' : ''}>
+              Reports
+            </Link>
+          </li>
+        </ul>
       </div>
     </nav>
   )

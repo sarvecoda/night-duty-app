@@ -6,9 +6,8 @@
   min-height: calc(100vh - 8rem);
 }
 
-.ask-header h1 {
-  color: var(--text-primary);
-  font-size: 1.75rem;
+.ask-header svg {
+  color: var(--primary-color);
 }
 
 .ask-header p,
@@ -74,15 +73,17 @@
 }
 
 .ask-fab {
-  width: 4rem;
-  height: 4rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border: none;
   border-radius: 999px;
   background: var(--primary-color);
   color: white;
-  font-weight: 700;
   cursor: pointer;
   box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ask-panel {
