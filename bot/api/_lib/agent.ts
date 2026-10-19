@@ -1,11 +1,11 @@
 import type { OutButton } from './whatsapp.js'
 import type { ChatTurn, Pending } from './roster.js'
-import { dutiesFor, getAvailability, openRequestsFor } from './roster.js'
+import { appFacts, dutiesFor, getAvailability, openRequestsFor } from './roster.js'
 import { definitionsFor, definitionsForWeb, runTool, type Caller, type ToolResult } from './tools.js'
 import { nextMonthYear, prettyDate, scrubDigits } from './pure.js'
 
 const REFUSAL = 'I can help with your dates, availability, swaps, or telling the admins you can\'t come.'
-export const WEB_REFUSAL = 'I can only answer questions about this night-duty roster.'
+export const WEB_REFUSAL = 'I can only answer questions about this night-duty app and its data.'
 
 interface ChatMessage {
   role: string
@@ -31,7 +31,7 @@ export async function answer(caller: Caller, text: string, history: ChatTurn[], 
     ? process.env.GROQ_MODEL_ADMIN || 'openai/gpt-oss-120b'
     : process.env.GROQ_MODEL_MEMBER || 'openai/gpt-oss-20b'
   const messages: ChatMessage[] = [
-    { role: 'system', content: web ? webPrompt(caller.today) : await systemPrompt(caller) },
+    { role: 'system', content: web ? await webPrompt(caller.today) : await systemPrompt(caller) },
     ...history.slice(-8).map(turn => ({ role: turn.role, content: turn.content.slice(0, 500) })),
     { role: 'user', content: text.slice(0, 1000) },
   ]
@@ -110,16 +110,25 @@ async function recoverFailedTool(errText: string, caller: Caller, scope: 'whatsa
   }
 }
 
-function webPrompt(today: string): string {
-  return [
-    'You answer questions about this night-duty roster only.',
-    `Today is ${today} (IST).`,
-    'Questions about duty, saints, phone numbers, attendance, availability, and the chart are roster questions. Call a tool before answering them.',
-    'Call get_chart for who is on duty. Never say the roster is unavailable.',
-    'Never invent names, dates, or phone numbers.',
-    'You cannot change the roster or send WhatsApp messages.',
-    `For a question that is not about this roster, such as general knowledge, reply exactly: ${WEB_REFUSAL}`,
-  ].join('\n')
+const APP_GUIDE = [
+  'You answer questions about the night-duty app and its data.',
+  'Pages: Dashboard (counts and upcoming duties), Saints (people, phones, emergency and admin flags), Availability (per person, per month), Schedule (the chart), Reports (fill rate and distribution), Ask (this chat).',
+  'A chart assigns 2 people a night. Each person can have at most 2 duties a month, at most one a week, and at least 7 days apart. People marked emergency for that month, or not available for duty, are left out. If available days or dates are set, only those count. Unavailable dates and weekdays are skipped. A partner asked for on a specific date is placed first. General partner preferences are placed next, up to 2 nights together. The rest is a random fill. A short night is saved as a warning.',
+  'WhatsApp, once connected, asks for next month availability 5 days before month end, reminds people who have not replied 3 days and 1 day before, and sends the chart on the last day. Each morning it asks admins who came last night and reminds the two people on duty. Each evening it reports who has not replied. Attendance counts only an admin mark; a No with no admin mark is absent; anything else is unconfirmed. Bot chats, replies, and requests are deleted after 6 months. Member records and charts are kept.',
+  'Call query_data before stating any name, number, date, count, or chart fact. Use get_attendance for attendance percentages and who_has_not_replied for missing replies.',
+  'query_data reads one collection: saints, availability, assignments, chart_warnings, duties, requests, inbox, chats, jobRuns.',
+  'saints: id, name, mobile, email, description, isEmergencyDuty, isUnavailableForDuty, isAdmin, createdAt.',
+  'availability: saintId, saintName, monthYear, unavailableDates, unavailableDays, availableDates, availableDays, partnerNames, dateSpecificPartners, isEmergencyDuty, respondedAt, source.',
+  'assignments: month, date, names, ids, status (filled, partial, unfilled), edited. chart_warnings: month, type, message, date, names.',
+  'duties: date, saintName, reply (yes or no), replyMessage, adminMark (present or absent). requests: kind, status, fromName, toName, fromDate, toDate. inbox: saintName, text, at. chats: saintName, lastMessage, lastInboundAt. jobRuns: day, job, at.',
+  'where ops: ==, !=, <, <=, >, >=, in, contains, exists. limit max 200. groupBy returns counts. contains is case-insensitive; on an array it means the array includes the value.',
+  'Never invent names, dates, or phone numbers. You cannot change data or send WhatsApp messages.',
+  `For a question that has nothing to do with this app, such as general knowledge, reply exactly: ${WEB_REFUSAL}`,
+].join('\n')
+
+async function webPrompt(today: string): Promise<string> {
+  const facts = await appFacts(today).catch(() => `Today is ${today} (IST).`)
+  return `${APP_GUIDE}\n${facts}`
 }
 
 function finish(caller: Caller, text: string, buttons?: OutButton[], pending?: Pending | null, web = false): Answer {

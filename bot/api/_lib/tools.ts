@@ -8,6 +8,7 @@ import {
   dutiesOn,
   getAvailability,
   getSchedule,
+  loadQueryRows,
   loadSaints,
   personLabel,
   recentMonths,
@@ -20,8 +21,11 @@ import {
   checkExchange,
   displayName,
   dutyCount,
+  knownCollection,
   matchByName,
   nextMonthYear,
+  runQuery,
+  type QueryFilter,
   normalizeWeekday,
   prettyDate,
   shapePeople,
@@ -176,6 +180,35 @@ const TOOLS: ToolDef[] = [
       required: ['personName', 'date', 'replacingName'],
     },
   },
+  {
+    name: 'query_data',
+    description: 'Read one collection from the night-duty database. Use where, fields, orderBy, limit (max 200), or groupBy for counts. Collection and field names are in the system prompt.',
+    adminOnly: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        collection: { type: 'string' },
+        where: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              field: { type: 'string' },
+              op: { type: 'string', description: '==, !=, <, <=, >, >=, in, contains, or exists' },
+              value: { description: 'Compared value. For in, an array. For exists, true or false.' },
+            },
+            required: ['field', 'op'],
+          },
+        },
+        fields: stringList,
+        orderBy: { type: 'string' },
+        desc: { type: 'boolean' },
+        limit: { type: 'number' },
+        groupBy: { type: 'string' },
+      },
+      required: ['collection'],
+    },
+  },
 ]
 
 function asDefinitions(tools: ToolDef[]) {
@@ -293,6 +326,8 @@ async function dispatch(caller: Caller, name: string, args: Record<string, unkno
       return recordMark(arg(args, 'personName'), arg(args, 'date'), args.present === true)
     case 'ask_to_cover':
       return draftCoverAsk(caller, arg(args, 'personName'), arg(args, 'date'), arg(args, 'replacingName'))
+    case 'query_data':
+      return queryData(args)
     default:
       return { error: 'Unknown action.' }
   }
@@ -494,6 +529,46 @@ function asMonth(value: string, today: string): string {
     if (index >= 0) return `${named[2]}-${String(index + 1).padStart(2, '0')}`
   }
   return today.slice(0, 7)
+}
+
+function filtersOf(value: unknown): QueryFilter[] | { error: string } {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) return { error: 'where must be a list of filters.' }
+  const filters: QueryFilter[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return { error: 'Each filter needs a field and an op.' }
+    const filter = item as { field?: unknown; op?: unknown; value?: unknown }
+    if (typeof filter.field !== 'string' || typeof filter.op !== 'string') {
+      return { error: 'Each filter needs a field and an op.' }
+    }
+    filters.push({ field: filter.field, op: filter.op, value: filter.value })
+  }
+  return filters
+}
+
+function capData(value: unknown): unknown {
+  const text = JSON.stringify(value)
+  if (text.length <= 6000) return value
+  return `${text.slice(0, 6000)}… (truncated; add a filter, fields, or groupBy)`
+}
+
+async function queryData(args: Record<string, unknown>): Promise<ToolResult> {
+  const collection = arg(args, 'collection')
+  if (!knownCollection(collection)) return { error: `Unknown collection "${collection}".` }
+  const filters = filtersOf(args.where)
+  if (!Array.isArray(filters)) return filters
+  const equals = filters.find(filter => filter.op === '==')
+  const rows = await loadQueryRows(collection, equals ? { field: equals.field, value: equals.value } : undefined)
+  const result = runQuery(rows, {
+    where: filters,
+    fields: argList(args, 'fields'),
+    orderBy: arg(args, 'orderBy') || undefined,
+    desc: args.desc === true,
+    limit: typeof args.limit === 'number' ? args.limit : undefined,
+    groupBy: arg(args, 'groupBy') || undefined,
+  })
+  if ('error' in result) return result
+  return { data: capData(result) }
 }
 
 async function chartFor(monthYear: string, today: string): Promise<ToolResult> {

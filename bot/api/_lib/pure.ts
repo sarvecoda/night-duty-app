@@ -17,15 +17,30 @@ export const ADMIN_TOOL_NAMES = [
   'get_attendance',
   'record_attendance',
   'ask_to_cover',
+  'query_data',
 ] as const
 
 export const WEB_TOOL_NAMES = [
-  'get_chart',
-  'find_person',
-  'get_person',
-  'who_has_not_replied',
+  'query_data',
   'get_attendance',
+  'who_has_not_replied',
 ] as const
+
+export const QUERY_COLLECTIONS = [
+  'saints',
+  'availability',
+  'assignments',
+  'chart_warnings',
+  'duties',
+  'requests',
+  'inbox',
+  'chats',
+  'jobRuns',
+] as const
+
+export function knownCollection(name: string): boolean {
+  return (QUERY_COLLECTIONS as readonly string[]).includes(name)
+}
 
 export function toolNamesFor(isAdmin: boolean): string[] {
   return isAdmin ? [...ADMIN_TOOL_NAMES] : [...MEMBER_TOOL_NAMES]
@@ -292,6 +307,114 @@ export function within24Hours(lastInboundAt: string | undefined, now = Date.now(
 
 export function dutyCount(slots: DutySlot[], saintId: string): number {
   return slots.filter(slot => slot.saintIds.includes(saintId)).length
+}
+
+export const QUERY_ROW_CAP = 200
+
+const QUERY_OPS = new Set(['==', '!=', '<', '<=', '>', '>=', 'in', 'contains', 'exists'])
+
+export interface QueryFilter {
+  field: string
+  op: string
+  value?: unknown
+}
+
+export interface QuerySpec {
+  where?: QueryFilter[]
+  fields?: string[]
+  orderBy?: string
+  desc?: boolean
+  limit?: number
+  groupBy?: string
+}
+
+export interface QueryResult {
+  row_count: number | string
+  rows?: Record<string, unknown>[]
+  groups?: { key: string; count: number }[]
+}
+
+function same(left: unknown, right: unknown): boolean {
+  if (typeof left === 'string' || typeof right === 'string') {
+    return String(left ?? '').trim().toLowerCase() === String(right ?? '').trim().toLowerCase()
+  }
+  return left === right
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value)
+  return null
+}
+
+function compareValues(left: unknown, right: unknown): number {
+  const a = asNumber(left)
+  const b = asNumber(right)
+  if (a !== null && b !== null) return a - b
+  return String(left ?? '').localeCompare(String(right ?? ''))
+}
+
+function contains(field: unknown, value: unknown): boolean {
+  if (Array.isArray(field)) return field.some(item => same(item, value))
+  return String(field ?? '').toLowerCase().includes(String(value ?? '').toLowerCase())
+}
+
+function matches(row: Record<string, unknown>, clause: QueryFilter): boolean {
+  const field = row[clause.field]
+  const present = field !== undefined && field !== null && field !== ''
+  switch (clause.op) {
+    case '==': return same(field, clause.value)
+    case '!=': return !same(field, clause.value)
+    case '<': return compareValues(field, clause.value) < 0
+    case '<=': return compareValues(field, clause.value) <= 0
+    case '>': return compareValues(field, clause.value) > 0
+    case '>=': return compareValues(field, clause.value) >= 0
+    case 'in': return Array.isArray(clause.value) && clause.value.some(item => same(field, item))
+    case 'contains': return contains(field, clause.value)
+    case 'exists': return clause.value === false ? !present : present
+    default: return false
+  }
+}
+
+export function runQuery(rows: Record<string, unknown>[], spec: QuerySpec): QueryResult | { error: string } {
+  for (const clause of spec.where || []) {
+    if (!QUERY_OPS.has(clause.op)) return { error: `Unknown operator "${clause.op}".` }
+  }
+  let filtered = rows.filter(row => (spec.where || []).every(clause => matches(row, clause)))
+  if (spec.groupBy) {
+    const counts = new Map<string, number>()
+    for (const row of filtered) {
+      const key = String(row[spec.groupBy] ?? '')
+      counts.set(key, (counts.get(key) || 0) + 1)
+    }
+    let groups = [...counts.entries()].map(([key, count]) => ({ key, count }))
+    groups.sort((a, b) => spec.desc ? b.count - a.count || a.key.localeCompare(b.key) : a.key.localeCompare(b.key))
+    const shown = groups.slice(0, QUERY_ROW_CAP)
+    return {
+      row_count: groups.length > QUERY_ROW_CAP
+        ? `more than ${QUERY_ROW_CAP} (only ${QUERY_ROW_CAP} shown; add a filter or groupBy)`
+        : groups.length,
+      groups: shown,
+    }
+  }
+  if (spec.orderBy) {
+    const field = spec.orderBy
+    filtered = [...filtered].sort((a, b) => {
+      const diff = compareValues(a[field], b[field])
+      return spec.desc ? -diff : diff
+    })
+  }
+  const limit = Math.min(QUERY_ROW_CAP, Math.max(1, Math.floor(spec.limit || QUERY_ROW_CAP)))
+  const shown = filtered.slice(0, limit)
+  const projected = spec.fields?.length
+    ? shown.map(row => Object.fromEntries(spec.fields!.filter(field => field in row).map(field => [field, row[field]])))
+    : shown
+  return {
+    row_count: filtered.length > QUERY_ROW_CAP
+      ? `more than ${QUERY_ROW_CAP} (only ${QUERY_ROW_CAP} shown; add a filter or groupBy)`
+      : filtered.length,
+    rows: projected,
+  }
 }
 
 export function replaceSaintOnDate<T extends { date: string; saintIds: string[]; saintNames: string[]; status: string; manuallyEdited: boolean }>(

@@ -55,7 +55,7 @@ function AskConversation() {
     <>
       <div className="ask-thread" aria-live="polite">
         {turns.length === 0 && (
-          <p className="ask-empty">Ask who is on duty, who has not replied, or for someone's phone number.</p>
+          <p className="ask-empty">Ask about saints, charts, availability, attendance, or WhatsApp replies.</p>
         )}
         {turns.map((turn, index) => (
           <div key={`${turn.role}-${index}`} className={`ask-bubble ${turn.role}`}>

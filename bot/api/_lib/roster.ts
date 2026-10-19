@@ -8,6 +8,7 @@ import {
   displayName,
   dutyCount,
   istDate,
+  knownCollection,
   normalizePhone,
   replaceSaintOnDate,
   within24Hours,
@@ -419,6 +420,132 @@ export function recentMonths(today: string, count: number): string[] {
 
 export function personLabel(saint: BotSaint): string {
   return displayName(saint)
+}
+
+const QUERY_READ_CAP = 1000
+const STORED_EQUALS: Record<string, string[]> = {
+  saints: ['name', 'mobile', 'email', 'isEmergencyDuty', 'isUnavailableForDuty', 'isAdmin'],
+  availability: ['saintId', 'monthYear', 'isEmergencyDuty', 'source'],
+  duties: ['date', 'saintId', 'saintName', 'reply', 'adminMark'],
+  requests: ['kind', 'status', 'fromSaintId', 'toSaintId', 'fromDate', 'requestedBy'],
+  inbox: ['waId'],
+  chats: ['waId', 'saintId'],
+  jobRuns: ['day', 'job'],
+}
+
+function plainValue(value: unknown): unknown {
+  if (value && typeof value === 'object' && 'toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate().toISOString()
+  }
+  if (Array.isArray(value)) return value.map(plainValue)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, plainValue(item)]))
+  }
+  return value ?? ''
+}
+
+function namesFor(ids: unknown, byId: Map<string, string>): string[] {
+  if (!Array.isArray(ids)) return []
+  return ids.map(id => byId.get(String(id)) || String(id))
+}
+
+export async function loadQueryRows(collection: string, equals?: { field: string; value: unknown }): Promise<Record<string, unknown>[]> {
+  if (!knownCollection(collection)) throw new Error(`Unknown collection "${collection}"`)
+  const saints = await loadSaints()
+  const byId = new Map(saints.map(saint => [saint.id, saint.name]))
+  const byPhone = new Map(saints.flatMap(saint => {
+    const phone = normalizePhone(saint.mobile)
+    return phone ? [[phone, saint.name] as const] : []
+  }))
+  if (collection === 'assignments' || collection === 'chart_warnings') {
+    return scheduleRows(collection, byId)
+  }
+  const base = firestore().collection(collection)
+  const query = equals && STORED_EQUALS[collection]?.includes(equals.field) && equals.value !== undefined
+    ? base.where(equals.field, '==', equals.value).limit(QUERY_READ_CAP)
+    : base.limit(QUERY_READ_CAP)
+  const snap = await query.get()
+  return snap.docs.map(doc => readableRow(collection, doc.id, doc.data() as Record<string, unknown>, byId, byPhone))
+}
+
+async function scheduleRows(kind: string, byId: Map<string, string>): Promise<Record<string, unknown>[]> {
+  const snap = await firestore().collection('schedules').limit(QUERY_READ_CAP).get()
+  const rows: Record<string, unknown>[] = []
+  for (const doc of snap.docs) {
+    const data = doc.data()
+    const month = String(data.monthYear || doc.id)
+    const source = kind === 'assignments' ? data.assignments : data.warnings
+    for (const item of Array.isArray(source) ? source : []) {
+      const row = item as Record<string, unknown>
+      if (kind === 'assignments') {
+        const names = Array.isArray(row.saintNames) ? row.saintNames.map(String) : []
+        rows.push({
+          month,
+          date: String(row.date || ''),
+          names: names.join(', '),
+          saintNames: names,
+          ids: Array.isArray(row.saintIds) ? row.saintIds.map(String) : [],
+          status: String(row.status || ''),
+          edited: row.manuallyEdited === true,
+        })
+      } else {
+        const ids = Array.isArray(row.saintIds) ? row.saintIds.map(String) : []
+        rows.push({
+          month,
+          type: String(row.type || ''),
+          message: String(row.message || ''),
+          date: String(row.date || ''),
+          ids,
+          names: namesFor(ids, byId).join(', '),
+        })
+      }
+      if (rows.length >= QUERY_READ_CAP) return rows
+    }
+  }
+  return rows
+}
+
+function readableRow(
+  collection: string,
+  id: string,
+  data: Record<string, unknown>,
+  byId: Map<string, string>,
+  byPhone: Map<string, string>,
+): Record<string, unknown> {
+  const row = plainValue({ id, ...data }) as Record<string, unknown>
+  const saintId = String(row.saintId || '')
+  if (saintId && !row.saintName) row.saintName = byId.get(saintId) || ''
+  if (collection === 'availability') {
+    row.partnerNames = namesFor(row.partnerPreferences, byId)
+    if (Array.isArray(row.dateSpecificPartners)) {
+      row.dateSpecificPartners = row.dateSpecificPartners.map(item => {
+        const partner = item as Record<string, unknown>
+        return { ...partner, partnerName: byId.get(String(partner.partnerId || '')) || '' }
+      })
+    }
+  }
+  if (collection === 'requests' && row.requestedBy) {
+    row.requestedByName = byId.get(String(row.requestedBy)) || ''
+  }
+  const phone = normalizePhone(String(row.waId || ''))
+  if (phone) row.saintName = byPhone.get(phone) || row.saintName || ''
+  if (collection === 'chats' && Array.isArray(data.turns)) {
+    const last = data.turns[data.turns.length - 1] as { content?: string } | undefined
+    row.lastMessage = String(last?.content || '').slice(0, 200)
+    delete row.turns
+  }
+  return row
+}
+
+export async function appFacts(today: string): Promise<string> {
+  const saints = await loadSaints()
+  const schedules = await firestore().collection('schedules').get()
+  const months = schedules.docs.map(doc => doc.id).sort()
+  return [
+    `Today is ${today} (IST).`,
+    `Saints: ${saints.length}. WhatsApp admins: ${saints.filter(saint => saint.isAdmin).length}. Emergency staff: ${saints.filter(saint => saint.isEmergencyDuty).length}.`,
+    `Charts saved for: ${months.join(', ') || 'none'}.`,
+  ].join(' ')
 }
 
 export async function alertAdmins(text: string, exceptId?: string): Promise<void> {

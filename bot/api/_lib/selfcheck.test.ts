@@ -6,11 +6,13 @@ import {
   canonicalButton,
   checkExchange,
   classifyDuty,
+  knownCollection,
   lastDayOfMonth,
   matchByName,
   monthEndKind,
   normalizePhone,
   parseAttendanceButton,
+  runQuery,
   scrubDigits,
   shapePeople,
   toolNamesFor,
@@ -160,6 +162,38 @@ test('reads attendance button ids', () => {
   const one = parseAttendanceButton('att_both_2026-11-12_alpha_')
   assert.equal(one?.secondId, '')
   assert.equal(one?.kind, 'ATT_BOTH')
+})
+
+function queried(result: ReturnType<typeof runQuery>) {
+  if ('error' in result) throw new Error(result.error)
+  return result
+}
+
+test('query_data filters, groups, and caps rows', () => {
+  const rows = [
+    { name: 'Hardik', city: 'Delhi', tags: ['lead', 'night'], duties: 2 },
+    { name: 'Anand', city: 'Delhi', tags: ['night'], duties: 1 },
+    { name: 'Rakesh', city: 'Pune', tags: [], duties: 0 },
+  ]
+  assert.equal(knownCollection('secrets'), false)
+  assert.equal(knownCollection('saints'), true)
+  assert.deepEqual(queried(runQuery(rows, { where: [{ field: 'city', op: '==', value: 'delhi' }] })).rows?.map(row => row.name), ['Hardik', 'Anand'])
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'city', op: '!=', value: 'Delhi' }] })).rows?.length, 1)
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'duties', op: '<', value: 1 }] })).rows?.[0].name, 'Rakesh')
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'duties', op: '<=', value: 1 }] })).rows?.length, 2)
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'duties', op: '>', value: 1 }] })).rows?.[0].name, 'Hardik')
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'duties', op: '>=', value: 2 }] })).rows?.length, 1)
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'city', op: 'in', value: ['Pune', 'Goa'] }] })).rows?.[0].name, 'Rakesh')
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'name', op: 'contains', value: 'hard' }] })).rows?.[0].name, 'Hardik')
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'tags', op: 'contains', value: 'LEAD' }] })).rows?.[0].name, 'Hardik')
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'tags', op: 'exists', value: true }] })).rows?.length, 3)
+  assert.equal(queried(runQuery(rows, { where: [{ field: 'missing', op: 'exists', value: false }] })).rows?.length, 3)
+  assert.deepEqual(queried(runQuery(rows, { groupBy: 'city', desc: true })).groups?.[0], { key: 'Delhi', count: 2 })
+  assert.equal('error' in runQuery(rows, { where: [{ field: 'city', op: 'like', value: 'D' }] }), true)
+  const many = Array.from({ length: 250 }, (_, index) => ({ n: index }))
+  const capped = queried(runQuery(many, {}))
+  assert.equal(capped.row_count, 'more than 200 (only 200 shown; add a filter or groupBy)')
+  assert.equal(capped.rows?.length, 200)
 })
 
 test('name matching prefers one exact person', () => {
